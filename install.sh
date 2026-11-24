@@ -170,7 +170,8 @@ fi
 # 2. Minimum Paket Kurulumu
 echo -e "\n${YELLOW}${MSG_STEP1}${PLAIN}"
 apk update
-apk add --no-cache curl jq openssl qrencode unzip ca-certificates tzdata
+apk add --no-cache curl jq openssl unzip ca-certificates tzdata
+apk add --no-cache libqrencode-tools >/dev/null 2>&1 || apk add --no-cache qrencode >/dev/null 2>&1 || true
 
 # 3. Mimari Tespiti ve Xray Binary İndirme
 echo -e "\n${YELLOW}${MSG_STEP2}${PLAIN}"
@@ -346,7 +347,9 @@ echo -e "\n${GREEN}${MSG_STEP6}${PLAIN}\n"
 echo -e "${BLUE}${MSG_CLIENT_BANNER}${PLAIN}"
 cat /etc/xray/client_info.txt
 
-echo -e "\n${YELLOW}${MSG_QR_TITLE}${PLAIN}\n"
-qrencode -t ANSI256 "${VLESS_LINK}" || qrencode -t UTF8 "${VLESS_LINK}"
+if command -v qrencode >/dev/null 2>&1; then
+    echo -e "\n${YELLOW}${MSG_QR_TITLE}${PLAIN}\n"
+    qrencode -t ANSI256 "${VLESS_LINK}" || qrencode -t UTF8 "${VLESS_LINK}"
+fi
 
 echo -e "\n${GREEN}${MSG_SAVED_INFO}${PLAIN}"

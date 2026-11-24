@@ -181,6 +181,7 @@ def init_db() -> None:
                 defaults = {
                     "server_ip": os.environ.get("XRAY_SERVER_IP", "127.0.0.1"),
                     "port": port,
+                    "external_port": port,
                     "sni": sni,
                     "dest": dest,
                     "fingerprint": "chrome",
@@ -231,6 +232,7 @@ def get_server_config_dict() -> dict:
             keys = [
                 "server_ip",
                 "port",
+                "external_port",
                 "sni",
                 "dest",
                 "fingerprint",
@@ -242,6 +244,7 @@ def get_server_config_dict() -> dict:
             ]
             data = {k: _get_setting(conn, k) for k in keys}
             data["port"] = int(data["port"] or 443)
+            data["external_port"] = int(data["external_port"] or data["port"])
             data["buffer_size"] = int(data["buffer_size"] or 16)
             return data
         finally:
@@ -344,8 +347,9 @@ def build_vless_link(client: dict, srv: dict) -> str:
     sni = quote(srv["sni"], safe="")
     fp = quote(srv["fingerprint"] or "chrome", safe="")
     flow = quote(client["flow"] or "xtls-rprx-vision", safe="")
+    ext_port = srv.get("external_port") or srv["port"]
     return (
-        f"vless://{client['uuid']}@{srv['server_ip']}:{srv['port']}"
+        f"vless://{client['uuid']}@{srv['server_ip']}:{ext_port}"
         f"?security=reality&encryption=none&pbk={srv['public_key']}"
         f"&headerType=none&fp={fp}&spx={spx}&type=tcp"
         f"&flow={flow}&sni={sni}&sid={client['short_id']}#{label}"
@@ -378,7 +382,7 @@ def build_client_json(client: dict, srv: dict) -> dict:
                     "vnext": [
                         {
                             "address": srv["server_ip"],
-                            "port": srv["port"],
+                            "port": srv.get("external_port") or srv["port"],
                             "users": [
                                 {
                                     "id": client["uuid"],
@@ -709,7 +713,7 @@ class PanelHandler(BaseHTTPRequestHandler):
                     "params": {
                         "protocol": "VLESS",
                         "address": srv["server_ip"],
-                        "port": srv["port"],
+                        "port": srv.get("external_port") or srv["port"],
                         "uuid": client["uuid"],
                         "flow": client["flow"],
                         "security": "reality",
@@ -856,10 +860,11 @@ class PanelHandler(BaseHTTPRequestHandler):
                 return self._send_json(400, {"error": "Invalid JSON"})
             try:
                 port = int(body.get("port", 443))
+                ext_port = int(body.get("external_port") or port)
                 buf = int(body.get("buffer_size", 16))
             except ValueError:
                 return self._send_json(400, {"error": "Invalid numeric field"})
-            if not (1 <= port <= 65535):
+            if not (1 <= port <= 65535) or not (1 <= ext_port <= 65535):
                 return self._send_json(400, {"error": "Port must be between 1 and 65535"})
             if not (4 <= buf <= 512):
                 return self._send_json(400, {"error": "bufferSize must be between 4 and 512 KiB"})
@@ -872,6 +877,7 @@ class PanelHandler(BaseHTTPRequestHandler):
             updates = {
                 "server_ip": str(body.get("server_ip", "127.0.0.1")).strip() or "127.0.0.1",
                 "port": str(port),
+                "external_port": str(ext_port),
                 "sni": str(body.get("sni", "www.speedtest.net")).strip() or "www.speedtest.net",
                 "dest": str(body.get("dest", "www.speedtest.net:443")).strip()
                 or "www.speedtest.net:443",

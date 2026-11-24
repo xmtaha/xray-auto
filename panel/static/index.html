@@ -122,8 +122,12 @@
               <input id="srvIp" type="text" required />
             </div>
             <div class="field">
-              <label data-i18n="port">Port</label>
+              <label data-i18n="port">İç Port (Xray Dinleme)</label>
               <input id="srvPort" type="number" min="1" max="65535" required />
+            </div>
+            <div class="field">
+              <label data-i18n="external_port">Dış Port (İstemci Bağlantısı)</label>
+              <input id="srvExtPort" type="number" min="1" max="65535" required />
             </div>
             <div class="field">
               <label>SNI (Server Name)</label>

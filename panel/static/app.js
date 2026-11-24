@@ -28,7 +28,8 @@ const I18N = {
     server_title: "VLESS + Reality Sunucu Ayarları",
     gen_keys: "Yeni X25519 Anahtar Üret",
     server_ip: "Sunucu IP / Alan Adı",
-    port: "Port",
+    port: "İç Port (Xray Dinleme)",
+    external_port: "Dış Port (İstemci Bağlantısı)",
     buffer_size: "Buffer Size (KiB - Düşük RAM için 16)",
     log_level: "Log Seviyesi (Zero-Log: none)",
     save_apply: "Kaydet ve Config'i Güncelle",
@@ -82,7 +83,8 @@ const I18N = {
     server_title: "VLESS + Reality Server Settings",
     gen_keys: "Generate X25519 Keypair",
     server_ip: "Server IP / Domain",
-    port: "Port",
+    port: "Internal Port (Xray Listen)",
+    external_port: "External Port (Client Connect)",
     buffer_size: "Buffer Size (KiB - 16 for Low RAM)",
     log_level: "Log Level (Zero-Log: none)",
     save_apply: "Save & Update Config",
@@ -210,6 +212,7 @@ async function loadServer() {
   const srv = await api("/api/server");
   document.getElementById("srvIp").value = srv.server_ip || "";
   document.getElementById("srvPort").value = srv.port || 443;
+  document.getElementById("srvExtPort").value = srv.external_port || srv.port || 443;
   document.getElementById("srvSni").value = srv.sni || "";
   document.getElementById("srvDest").value = srv.dest || "";
   document.getElementById("srvFp").value = srv.fingerprint || "chrome";
@@ -448,6 +451,7 @@ document.getElementById("serverForm").addEventListener("submit", async (e) => {
   const payload = {
     server_ip: document.getElementById("srvIp").value,
     port: Number(document.getElementById("srvPort").value),
+    external_port: Number(document.getElementById("srvExtPort").value),
     sni: document.getElementById("srvSni").value,
     dest: document.getElementById("srvDest").value,
     fingerprint: document.getElementById("srvFp").value,

@@ -212,8 +212,8 @@ SNI="www.speedtest.net"
 
 UUID=$(/usr/local/bin/xray uuid)
 KEYPAIR=$(/usr/local/bin/xray x25519)
-PRIVATE_KEY=$(echo "$KEYPAIR" | awk '/Private key:/ {print $3}')
-PUBLIC_KEY=$(echo "$KEYPAIR" | awk '/Public key:/ {print $3}')
+PRIVATE_KEY=$(echo "$KEYPAIR" | awk -F': ' '/^Private ?[Kk]ey:/ {print $2}' | tr -d '[:space:]')
+PUBLIC_KEY=$(echo "$KEYPAIR" | awk -F': ' '/^(Password \(PublicKey\)|Public ?[Kk]ey):/ {print $2}' | tr -d '[:space:]')
 SHORT_ID=$(openssl rand -hex 8)
 
 # Dış IP tespiti

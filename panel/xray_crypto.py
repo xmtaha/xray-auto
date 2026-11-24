@@ -83,9 +83,14 @@ def generate_x25519_keypair(xray_bin: str = "/usr/local/bin/xray") -> dict[str, 
             )
             priv = pub = ""
             for line in proc.stdout.splitlines():
-                if line.startswith("Private key:"):
+                lower = line.lower()
+                if lower.startswith("private key:") or lower.startswith("privatekey:"):
                     priv = line.split(":", 1)[1].strip()
-                elif line.startswith("Public key:"):
+                elif (
+                    lower.startswith("public key:")
+                    or lower.startswith("publickey:")
+                    or lower.startswith("password (publickey):")
+                ):
                     pub = line.split(":", 1)[1].strip()
             if priv and pub:
                 return {"privateKey": priv, "publicKey": pub, "source": "xray"}

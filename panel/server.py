@@ -463,17 +463,37 @@ def _detect_service_manager() -> str | None:
     return None
 
 
-def _get_xray_process_info() -> dict:
-    pid = None
-    rss_mb = 0.0
-    running = False
+def _find_xray_pid() -> int | None:
+    """Find running xray PID via /run/xray.pid or /proc scan (BusyBox-safe)."""
+    pidfile = "/run/xray.pid"
+    if os.path.isfile(pidfile):
+        try:
+            with open(pidfile, "r", encoding="utf-8") as f:
+                pid = int(f.read().strip())
+            if os.path.isdir(f"/proc/{pid}"):
+                return pid
+        except Exception:
+            pass
     try:
-        proc = subprocess.run(
-            ["pgrep", "-x", "xray"], capture_output=True, text=True, timeout=2
-        )
-        if proc.returncode == 0 and proc.stdout.strip():
-            pid = int(proc.stdout.strip().splitlines()[0])
-            running = True
+        for entry in os.listdir("/proc"):
+            if not entry.isdigit():
+                continue
+            comm_path = f"/proc/{entry}/comm"
+            if os.path.isfile(comm_path):
+                with open(comm_path, "r", encoding="utf-8", errors="ignore") as f:
+                    if f.read().strip() == "xray":
+                        return int(entry)
+    except Exception:
+        pass
+    return None
+
+
+def _get_xray_process_info() -> dict:
+    pid = _find_xray_pid()
+    rss_mb = 0.0
+    running = pid is not None
+    if pid is not None:
+        try:
             status_path = f"/proc/{pid}/status"
             if os.path.isfile(status_path):
                 with open(status_path, "r", encoding="utf-8") as f:
@@ -482,8 +502,8 @@ def _get_xray_process_info() -> dict:
                             kb = int(line.split()[1])
                             rss_mb = round(kb / 1024, 2)
                             break
-    except Exception:
-        pass
+        except Exception:
+            pass
 
     svc_mgr = _detect_service_manager()
     svc_status = "running" if running else "stopped"
@@ -493,6 +513,8 @@ def _get_xray_process_info() -> dict:
                 ["rc-service", "xray", "status"], capture_output=True, text=True, timeout=3
             )
             svc_status = "running" if r.returncode == 0 else "stopped"
+            if svc_status == "running":
+                running = True
         except Exception:
             pass
 

@@ -28,6 +28,11 @@ An automated installation script to set up Xray-core VLESS + XTLS-Reality on Alp
   - Instantly generates an ASCII QR code in your terminal and exports the vless:// configuration link.
 - Multi-Language Support (Auto-Detect):
   - Prioritizes keyboard layout and system locale to display in Turkish on Turkish systems and English on all other systems (supports manual override via `XRAY_LANG=tr` or `XRAY_LANG=en`).
+- Lightweight Web Management Panel (Optional):
+  - Zero external Python dependencies (stdlib only), zero HTTP access logs, and ~15 MB RAM footprint.
+  - Manage personalized VLESS-Reality client profiles (per-user UUID, Short ID, offline SVG QR code, `vless://` link, and client `config.json` export).
+  - Separate Internal Listen Port and External Client Port settings for NAT / port-forwarded VPS environments.
+  - Live system monitoring (RAM, CPU load, Disk, Xray RSS memory) and OpenRC service controls.
 
 ---
 
@@ -108,6 +113,36 @@ ls -la /var/log/xray 2>/dev/null || echo "No log files found."
 
 ---
 
+### Web Management Panel (Optional)
+
+Install the lightweight web panel as an OpenRC service on Alpine Linux:
+
+```sh
+git clone https://github.com/xmtaha/xray-auto.git
+cd xray-auto
+chmod +x panel/install-panel.sh
+./panel/install-panel.sh
+```
+
+Or run locally for config generation without OpenRC:
+
+```sh
+python3 panel/server.py
+```
+
+- Default URL: `http://<SERVER_IP>:8080`
+- Default credentials: `admin` / `admin123` (change the password immediately after logging in).
+- Manage the panel service independently without interrupting Xray:
+
+```sh
+rc-service xray-panel status
+rc-service xray-panel stop
+rc-service xray-panel start
+rc-update del xray-panel default   # Disable auto-start on boot
+```
+
+---
+
 <br>
 
 ## Turkce
@@ -134,6 +169,11 @@ Alpine Linux uzerinde Xray-core VLESS + XTLS-Reality protokolunu tek komutla kur
   - Kurulum sonunda dogrudan terminalde okutulabilir QR kod ve vless:// baglanti linki uretir.
 - Coklu Dil Destegi (Otomatik Algilama):
   - Klavye duzeni ve sistem dilini oncelikli olarak baz alir; Turkce sistemlerde Turkce, diger tum sistemlerde varsayilan olarak Ingilizce acilir (`XRAY_LANG=tr` veya `XRAY_LANG=en` ile de zorlanabilir).
+- Ultra Hafif Web Yonetim Paneli (Opsiyonel):
+  - Harici Python bagimliligi yoktur (yalnizca standart kutuphane), HTTP erisim logu tutmaz ve ~15 MB RAM tuketir.
+  - Kisiye ozel VLESS-Reality profilleri (ayri UUID, Short ID, cevrimdisi SVG QR kod, `vless://` linki ve istemci `config.json` indirme).
+  - NAT / port yonlendirmeli sunucular icin ayri Ic Port (dinleme) ve Dis Port (istemci baglantisi) ayari.
+  - Canli sistem izleme (RAM, CPU yuku, Disk, Xray RSS bellegi) ve OpenRC servis yonetimi.
 
 ---
 
@@ -210,4 +250,34 @@ ps -o pid,user,%mem,rss,args -C xray
 
 # Log tutulmadigini dogrula
 ls -la /var/log/xray 2>/dev/null || echo "Log dizini yok veya temiz."
+```
+
+---
+
+### Web Yonetim Paneli (Opsiyonel)
+
+Web panelini Alpine Linux uzerinde OpenRC servisi olarak kurmak icin:
+
+```sh
+git clone https://github.com/xmtaha/xray-auto.git
+cd xray-auto
+chmod +x panel/install-panel.sh
+./panel/install-panel.sh
+```
+
+Veya OpenRC olmadan yerel config uretici olarak calistirmak icin:
+
+```sh
+python3 panel/server.py
+```
+
+- Varsayilan adres: `http://<SUNUCU_IP>:8080`
+- Varsayilan giris: `admin` / `admin123` (giris yaptiktan sonra sifreyi hemen degistirin).
+- Panel servisini Xray VPN baglantisini kesmeden bagimsiz olarak yonetebilirsiniz:
+
+```sh
+rc-service xray-panel status
+rc-service xray-panel stop
+rc-service xray-panel start
+rc-update del xray-panel default   # Acilista otomatik baslatmayi kapatir
 ```

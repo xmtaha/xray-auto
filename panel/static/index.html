@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Xray-Auto Panel</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+  <!-- Login View -->
+  <div id="loginView" class="login-wrap hidden">
+    <div class="login-card">
+      <h1>⚡ Xray-Auto <span class="badge">Zero-Log</span></h1>
+      <p data-i18n="login_sub">VLESS + XTLS-Reality Yönetim Paneli</p>
+      <form id="loginForm">
+        <div class="field">
+          <label data-i18n="username">Kullanıcı Adı</label>
+          <input id="loginUser" type="text" value="admin" required autocomplete="username" />
+        </div>
+        <div class="field">
+          <label data-i18n="password">Şifre</label>
+          <input id="loginPass" type="password" required autocomplete="current-password" />
+        </div>
+        <div id="loginError" class="stat-sub" style="color: var(--red); margin-bottom: 10px;"></div>
+        <button class="btn btn-primary" style="width:100%" type="submit" data-i18n="login_btn">Giriş Yap</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- App View -->
+  <div id="appView" class="hidden">
+    <header class="topbar">
+      <div class="brand">
+        <span>⚡ Xray-Auto Panel</span>
+        <span class="badge" id="zeroLogBadge">Zero-Log</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-sm" id="langToggle">EN</button>
+        <button class="btn btn-sm" id="btnChangePass" data-i18n="change_pass">Şifre Değiştir</button>
+        <button class="btn btn-sm btn-danger" id="btnLogout" data-i18n="logout">Çıkış</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <div id="defaultPassAlert" class="alert alert-warn hidden">
+        <span data-i18n="default_pass_warn">Varsayılan şifre (admin123) kullanılıyor. Güvenlik için şifrenizi değiştirin.</span>
+        <button class="btn btn-sm" id="btnWarnChangePass" data-i18n="change_pass">Şifre Değiştir</button>
+      </div>
+
+      <!-- System Stats -->
+      <section class="stats-grid">
+        <div class="card">
+          <div class="stat-label" data-i18n="ram_usage">RAM Kullanımı</div>
+          <div class="stat-value" id="statRamVal">-</div>
+          <div class="progress"><div class="progress-bar" id="statRamBar" style="width:0%"></div></div>
+          <div class="stat-sub" id="statRamSub">-</div>
+        </div>
+        <div class="card">
+          <div class="stat-label" data-i18n="cpu_uptime">CPU & Çalışma Süresi</div>
+          <div class="stat-value" id="statLoadVal">-</div>
+          <div class="stat-sub" id="statUptimeSub">-</div>
+          <div class="stat-sub" id="statHostSub">-</div>
+        </div>
+        <div class="card">
+          <div class="stat-label" data-i18n="disk_privacy">Disk & Gizlilik</div>
+          <div class="stat-value" id="statDiskVal">-</div>
+          <div class="stat-sub" id="statPrivacySub">-</div>
+          <div class="stat-sub" id="statClientsCount">-</div>
+        </div>
+        <div class="card">
+          <div class="stat-label" data-i18n="xray_service">Xray Servisi</div>
+          <div class="stat-value" id="statSvcVal">-</div>
+          <div class="stat-sub" id="statSvcSub">-</div>
+          <div class="svc-actions">
+            <button class="btn btn-sm btn-primary" onclick="svcAction('apply')" data-i18n="apply">Uygula</button>
+            <button class="btn btn-sm" onclick="svcAction('restart')" data-i18n="restart">Yeniden Başlat</button>
+            <button class="btn btn-sm btn-danger" onclick="svcAction('stop')" data-i18n="stop">Durdur</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Navigation Tabs -->
+      <nav class="tabs">
+        <button class="tab-btn active" data-tab="clients" data-i18n="tab_clients">Kişiye Özel Configler</button>
+        <button class="tab-btn" data-tab="server" data-i18n="tab_server">Sunucu & Reality Ayarları</button>
+        <button class="tab-btn" data-tab="raw" data-i18n="tab_raw">Sunucu config.json</button>
+      </nav>
+
+      <!-- Tab: Clients -->
+      <section id="tab-clients" class="card">
+        <div class="section-head">
+          <h2 data-i18n="clients_title">Kullanıcı / Cihaz Profilleri</h2>
+          <button class="btn btn-primary" id="btnNewClient">+ <span data-i18n="new_client">Yeni Kişiye Özel Config</span></button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-i18n="col_name">İsim / Etiket</th>
+                <th>UUID</th>
+                <th>Short ID</th>
+                <th data-i18n="col_status">Durum</th>
+                <th data-i18n="col_actions">İşlemler</th>
+              </tr>
+            </thead>
+            <tbody id="clientsTbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Tab: Server Settings -->
+      <section id="tab-server" class="card hidden">
+        <div class="section-head">
+          <h2 data-i18n="server_title">VLESS + Reality Sunucu Ayarları</h2>
+          <button class="btn" id="btnGenKeys" data-i18n="gen_keys">Yeni X25519 Anahtar Üret</button>
+        </div>
+        <form id="serverForm">
+          <div class="form-grid">
+            <div class="field">
+              <label data-i18n="server_ip">Sunucu IP / Alan Adı</label>
+              <input id="srvIp" type="text" required />
+            </div>
+            <div class="field">
+              <label data-i18n="port">Port</label>
+              <input id="srvPort" type="number" min="1" max="65535" required />
+            </div>
+            <div class="field">
+              <label>SNI (Server Name)</label>
+              <input id="srvSni" type="text" required />
+              <div class="presets">
+                <span class="chip" onclick="setSni('www.speedtest.net')">speedtest.net</span>
+                <span class="chip" onclick="setSni('www.microsoft.com')">microsoft.com</span>
+                <span class="chip" onclick="setSni('www.apple.com')">apple.com</span>
+                <span class="chip" onclick="setSni('dl.google.com')">dl.google.com</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>Dest (Target:Port)</label>
+              <input id="srvDest" type="text" required />
+            </div>
+            <div class="field">
+              <label>Fingerprint (uTLS)</label>
+              <select id="srvFp">
+                <option value="chrome">chrome</option>
+                <option value="firefox">firefox</option>
+                <option value="safari">safari</option>
+                <option value="ios">ios</option>
+                <option value="android">android</option>
+                <option value="edge">edge</option>
+                <option value="random">random</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>SpiderX</label>
+              <input id="srvSpx" type="text" value="/" />
+            </div>
+            <div class="field">
+              <label>Private Key (X25519)</label>
+              <input id="srvPriv" class="mono" type="text" required />
+            </div>
+            <div class="field">
+              <label>Public Key (PBK)</label>
+              <input id="srvPub" class="mono" type="text" required />
+            </div>
+            <div class="field">
+              <label data-i18n="buffer_size">Buffer Size (KiB - Düşük RAM için 16)</label>
+              <input id="srvBuf" type="number" min="4" max="512" value="16" />
+            </div>
+            <div class="field">
+              <label data-i18n="log_level">Log Seviyesi (Zero-Log: none)</label>
+              <select id="srvLog">
+                <option value="none">none (Zero-Log)</option>
+                <option value="error">error</option>
+                <option value="warning">warning</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top: 12px; display:flex; gap:10px;">
+            <button class="btn btn-primary" type="submit" data-i18n="save_apply">Kaydet ve Config'i Güncelle</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Tab: Raw Config -->
+      <section id="tab-raw" class="card hidden">
+        <div class="section-head">
+          <h2>config.json <span id="rawPath" class="stat-sub mono"></span></h2>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-sm" id="btnRefreshRaw" data-i18n="refresh">Yenile</button>
+            <button class="btn btn-sm btn-primary" id="btnCopyRaw" data-i18n="copy">Kopyala</button>
+          </div>
+        </div>
+        <pre id="rawConfigPre" class="code-box mono"></pre>
+      </section>
+    </main>
+  </div>
+
+  <!-- Client Create/Edit Modal -->
+  <div id="clientModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="clientModalTitle" data-i18n="new_client">Yeni Kişiye Özel Config</h3>
+        <button class="btn btn-sm" onclick="closeModal('clientModal')">✕</button>
+      </div>
+      <form id="clientForm">
+        <input type="hidden" id="cliId" />
+        <div class="field">
+          <label data-i18n="col_name">İsim / Etiket (örn: Ahmet - iPhone)</label>
+          <input id="cliName" type="text" required placeholder="Ahmet - Telefon" />
+        </div>
+        <div class="field">
+          <label>Email / ID (Opsiyonel)</label>
+          <input id="cliEmail" type="text" placeholder="ahmet@xray.local" />
+        </div>
+        <div class="field">
+          <label>UUID</label>
+          <div class="input-row">
+            <input id="cliUuid" class="mono" type="text" required />
+            <button class="btn btn-sm" type="button" onclick="regenUuid()">↻</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Short ID (Hex)</label>
+          <div class="input-row">
+            <input id="cliSid" class="mono" type="text" required />
+            <button class="btn btn-sm" type="button" onclick="regenSid()">↻</button>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Flow</label>
+            <select id="cliFlow">
+              <option value="xtls-rprx-vision">xtls-rprx-vision</option>
+              <option value="">none</option>
+            </select>
+          </div>
+          <div class="field">
+            <label data-i18n="col_status">Durum</label>
+            <select id="cliEnabled">
+              <option value="1" data-i18n="active">Aktif</option>
+              <option value="0" data-i18n="disabled">Pasif</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label data-i18n="note">Not</label>
+          <input id="cliNote" type="text" placeholder="Cihaz / açıklama" />
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
+          <button class="btn" type="button" onclick="closeModal('clientModal')" data-i18n="cancel">İptal</button>
+          <button class="btn btn-primary" type="submit" data-i18n="save">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Export / QR Modal -->
+  <div id="exportModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="exportTitle">Client Config</h3>
+        <button class="btn btn-sm" onclick="closeModal('exportModal')">✕</button>
+      </div>
+      <div id="qrContainer" class="qr-box"></div>
+      <div class="field">
+        <label>VLESS Reality Link</label>
+        <div class="input-row">
+          <input id="exportVless" class="mono" type="text" readonly />
+          <button class="btn btn-sm btn-primary" onclick="copyInput('exportVless')" data-i18n="copy">Kopyala</button>
+        </div>
+      </div>
+      <div class="field">
+        <label data-i18n="client_json">İstemci config.json (v2rayN / Xray)</label>
+        <pre id="exportJson" class="code-box mono" style="max-height:190px;"></pre>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button class="btn btn-sm" onclick="copyText(document.getElementById('exportJson').textContent)" data-i18n="copy_json">JSON Kopyala</button>
+          <button class="btn btn-sm btn-primary" id="btnDownloadJson" data-i18n="download_json">JSON İndir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Modal -->
+  <div id="passModal" class="modal-backdrop hidden">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-head">
+        <h3 data-i18n="change_pass">Şifre Değiştir</h3>
+        <button class="btn btn-sm" onclick="closeModal('passModal')">✕</button>
+      </div>
+      <form id="passForm">
+        <div class="field">
+          <label data-i18n="current_pass">Mevcut Şifre</label>
+          <input id="oldPass" type="password" required />
+        </div>
+        <div class="field">
+          <label data-i18n="new_pass">Yeni Şifre (en az 6 karakter)</label>
+          <input id="newPass" type="password" minlength="6" required />
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+          <button class="btn" type="button" onclick="closeModal('passModal')" data-i18n="cancel">İptal</button>
+          <button class="btn btn-primary" type="submit" data-i18n="save">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/qrcode.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

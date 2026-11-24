@@ -1,0 +1,4 @@
+.codegraph/
+panel/data/
+__pycache__/
+*.pyc
